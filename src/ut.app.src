@@ -1,0 +1,9 @@
+{application, ut,
+  [
+    {description, ""},
+    {vsn, "0.1"},
+    {registered, []},
+    {applications, []},
+    {env, []}
+  ]}.
+
