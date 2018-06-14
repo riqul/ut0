@@ -2,6 +2,6 @@
 /*.iml
 _build/
 ebin/
-/deps
+deps/
 /erl_crash.dump
 /rebar.lock
