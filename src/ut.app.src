@@ -1,8 +1,9 @@
 {application, ut,
   [
-    {description, ""},
+    {description, "ut"},
     {vsn, "0.1"},
-    {registered, []},
+    {id, "ut"},
+    {modules, [ut]},
     {applications, []},
     {env, []}
   ]}.
