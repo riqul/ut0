@@ -5,6 +5,10 @@
     {id, "ut"},
     {modules, [ut]},
     {applications, []},
-    {env, []}
+    {env, []},
+    {files, [
+      "include",
+      "src"
+    ]}
   ]}.
 
