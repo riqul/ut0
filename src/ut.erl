@@ -11,8 +11,13 @@
   mget/3,
   mput/3,
   
-  is_s_byte/1,
-  is_s_unicode/1,
+  is_s/1,
+%%  is_s_byte/1,
+  
+  is_su/1,
+%%  is_s_unicode/1,
+  
+  is_s_digits/1,
   
   b/1,
   b/2,
@@ -20,7 +25,10 @@
   ok2/1,
   
   l_skip/2,
+  l_skip_safe/3,
   l_skip_errv/3,
+  
+  l_push_rep/3,
   
   l_key_val2p_rev/3,
   l_key_val2p/3,
@@ -32,9 +40,16 @@
   jsx_is_obj/1,
   jsx_obj2p/1,
   jsx_p2obj/1,
-
+  
   is_re/2,
-  is_re_bin/2]).
+  is_re_b/2,
+%%  is_re_bin/2,
+  
+  s2s_hex_rev/2,
+  s2s_hex/1,
+  s2s_hex/2,
+  b2b_hex/1
+]).
 
 
 %% proplists %%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +58,7 @@
 pget(Key, List) ->
   case lists:keyfind(Key, 1, List) of
     {_, Val} -> Val;
-    false -> undefined
+    false -> ?u
 %%    ;_ -> undefined % found tuple with size =/= 2
   end.
 
@@ -64,7 +79,7 @@ pput(Key, Val, List) ->
 
 -spec mget(any(), map()) -> any().
 mget(Key, Map) ->
-  maps:get(Key, Map, undefined).
+  maps:get(Key, Map, ?u).
 
 -spec mget(any(), map(), any()) -> any().
 % duplicate maps:get/3 - if you want to use ut:m...
@@ -77,30 +92,49 @@ mput(Key, Val, Map) ->
   maps:put(Key, Val, Map).
 
 
-%% is_... %%%%%%%%%%%%%%%%%%%%%%%%%%
+%% is_... macro %%%%%%%%%%%%%%%%%%%%
 
-is_s_byte([X | Tail]) ->
+%% is_... no macro %%%%%%%%%%%%%%%%%
+
+is_s([X | Tail]) ->
   ?IF(?is_byte(X),
-    is_s_byte(Tail),
+    is_s(Tail),
     false
   );
-is_s_byte("") ->
+is_s("") ->
   true;
-is_s_byte(_) ->
+is_s(_) ->
   false.
 
 
-%todo: rename?
-is_s_unicode([X | Tail]) ->
+%%is_s_byte(Arg) -> %todo: deprecated
+%%  is_s(Arg).
+
+
+
+is_su([X | Tail]) ->
   ?IF(?is_i_non_neg(X),
-    is_s_unicode(Tail),
+    is_su(Tail),
     false
   );
-is_s_unicode("") ->
+is_su("") ->
   true;
-is_s_unicode(_) ->
+is_su(_) ->
   false.
 
+%%is_s_unicode(Arg) -> %todo: deprecated
+%%  is_su(Arg).
+
+
+is_s_digits([X | Tail]) ->
+  ?IF(?is_i_digit(X),
+    is_s_digits(Tail),
+    false
+  );
+is_s_digits("") ->
+  true;
+is_s_digits(_) ->
+  false.
 
 %% convert %%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -184,7 +218,7 @@ l_skip(N, List) when ?is_i_non_neg(N) ->
     _ -> % 8 or more
       case List of
         [_, _, _, _, _, _, _, _ | Tail] ->
-          case l_skip_(N - 8, Tail) of
+          case l_skip__no_verify_(N - 8, Tail) of
             badarg ->
               ?err_badarg([N, List]);
             Res ->
@@ -196,7 +230,7 @@ l_skip(N, List) when ?is_i_non_neg(N) ->
   end.
 
 %require ?is_i_non_neg(N), ?is_l(List)
-l_skip_(N, List) ->
+l_skip__no_verify_(N, List) ->
   case N of
     0 ->
       List;
@@ -252,15 +286,15 @@ l_skip_(N, List) ->
     _ -> % 8 or more
       case List of
         [_, _, _, _, _, _, _, _ | Tail] ->
-          l_skip_(N - 8, Tail);
+          l_skip__no_verify_(N - 8, Tail);
         _ ->
           badarg
       end
   end.
 
 
--spec l_skip_errv(non_neg_integer(), list(), any()) -> list() | any().
-l_skip_errv(N, List, ErrVal) when ?is_i_non_neg(N) ->
+-spec l_skip_safe(non_neg_integer(), list(), any()) -> list() | any().
+l_skip_safe(N, List, ErrVal) when ?is_i_non_neg(N) ->
   case N of
     0 ->
       ?IF(?is_l(List),
@@ -319,7 +353,7 @@ l_skip_errv(N, List, ErrVal) when ?is_i_non_neg(N) ->
     _ -> % 8 or more
       case List of
         [_, _, _, _, _, _, _, _ | Tail] ->
-          case l_skip_(N - 8, Tail) of
+          case l_skip__no_verify_(N - 8, Tail) of
             badarg ->
               ErrVal;
             Res ->
@@ -331,10 +365,70 @@ l_skip_errv(N, List, ErrVal) when ?is_i_non_neg(N) ->
   end.
 
 
+l_skip_errv(N, List, ErrVal) -> %todo: deprecated
+  l_skip_safe(N, List, ErrVal).
+
+
+
+
+l_push_rep(N, E, List)
+  when ?is_i_non_neg(N), ?is_l(List) ->
+  case N of
+    0 ->
+      List;
+    1 ->
+      [E | List];
+    2 ->
+      [E, E | List];
+    3 ->
+      [E, E, E | List];
+    4 ->
+      [E, E, E, E | List];
+    5 ->
+      [E, E, E, E, E | List];
+    6 ->
+      [E, E, E, E, E, E | List];
+    7 ->
+      [E, E, E, E, E, E, E | List];
+    _ ->
+      l_push_rep__no_verify_(N - 8, E, [E, E, E, E, E, E, E, E | List])
+  end.
+
+% require ?is_i_non_neg(N), ?is_l(List) ->
+l_push_rep__no_verify_(N, E, List) ->
+  case N of
+    0 ->
+      List;
+    1 ->
+      [E | List];
+    2 ->
+      [E, E | List];
+    3 ->
+      [E, E, E | List];
+    4 ->
+      [E, E, E, E | List];
+    5 ->
+      [E, E, E, E, E | List];
+    6 ->
+      [E, E, E, E, E, E | List];
+    7 ->
+      [E, E, E, E, E, E, E | List];
+    _ ->
+      l_push_rep__no_verify_(N - 8, E, [E, E, E, E, E, E, E, E | List])
+  end.
+
+
+
 l_key_val2p_rev([K | KTail], [V | VTail], Acc) ->
   l_key_val2p_rev(KTail, VTail, [{K, V} | Acc]);
 l_key_val2p_rev([], [], Acc) ->
   Acc.
+
+l_key_val2p([K | KTail], [V | VTail], Acc) ->
+  l_key_val2p(KTail, VTail, [{K, V} | Acc]);
+l_key_val2p([], [], Acc) ->
+  ?l_rev(Acc).
+
 
 %%l_key_val_stopmap2p_rev([K | KTail], [V | VTail], Acc, StopMapFun) ->
 %%  KV = {K, V},
@@ -347,22 +441,22 @@ l_key_val2p_rev([], [], Acc) ->
 %%l_key_val_stopmap2p_rev([], [], Acc, _StopMapFun) ->
 %%  Acc.
 
-l_key_val_stopmap2p_rev([K | KTail], [V | VTail], Acc, StopMapFun, FunAcc) ->
+l_key_val_stopmap2p_rev([K | KTail], [V | VTail], Acc, StopMapFun2, Arg2FunAcc) ->
   KV = {K, V},
-  case StopMapFun(KV, FunAcc) of
-    {ok, KV2, FunAcc2} ->
-      l_key_val_stopmap2p_rev(KTail, VTail, [KV2 | Acc], StopMapFun, FunAcc2);
-    {stop, _StopRes, _FunAcc2} = Stop ->
+  case StopMapFun2(KV, Arg2FunAcc) of
+    {ok, KV2, Arg2FunAcc2} ->
+      l_key_val_stopmap2p_rev(KTail, VTail, [KV2 | Acc], StopMapFun2, Arg2FunAcc2);
+    {stop, _StopRes, _Arg2FunAcc2} = Stop ->
       Stop
   end;
-l_key_val_stopmap2p_rev([], [], Acc, _StopMapFun, FunAcc) ->
-  {ok, Acc, FunAcc}.
+l_key_val_stopmap2p_rev([], [], Acc, _StopMapFun, Arg2FunAcc) ->
+  {ok, Acc, Arg2FunAcc}.
 
-l_stopmap_rev([Elem | Tail], Acc, StopMapFun, FunAcc) ->
-  case StopMapFun(Elem, FunAcc) of
-    {ok, Elem2, FunAcc2} ->
-      l_stopmap_rev(Tail, [Elem2 | Acc], StopMapFun, FunAcc2);
-    {stop, _StopRes, _FunAcc2} = Stop ->
+l_stopmap_rev([Elem | Tail], Acc, StopMapFun2, Arg2FunAcc) ->
+  case StopMapFun2(Elem, Arg2FunAcc) of
+    {ok, Elem2, Arg2FunAcc2} ->
+      l_stopmap_rev(Tail, [Elem2 | Acc], StopMapFun2, Arg2FunAcc2);
+    {stop, _StopRes, _Arg2FunAcc2} = Stop ->
       Stop
   end;
 l_stopmap_rev([], Acc, _StopMapFun, FunAcc) ->
@@ -370,23 +464,23 @@ l_stopmap_rev([], Acc, _StopMapFun, FunAcc) ->
 
 
 
-l_key_val2p([K | KTail], [V | VTail], Acc) ->
-  l_key_val2p_rev(KTail, VTail, [{K, V} | Acc]);
-l_key_val2p([], [], Acc) ->
-  ?l_rev(Acc).
-
-
-
 
 
 
 jsx_is_obj(X) ->
-  case X of
-    [{}] ->
+  if
+    ?is_m(X) ->
       true;
-    [{_, _} | _] ->
-      true;
-    _ ->
+    ?is_l(X) ->
+      case X of
+        [{_, _} | _] ->
+          true;
+        [{}] ->
+          true;
+        _ ->
+          false
+      end;
+    true ->
       false
   end.
 
@@ -409,14 +503,65 @@ is_re(X, Regexp) ->
       false
   end.
 
-is_re_bin(X, Regexp) when is_binary(X) ->
+is_re_b(X, Regexp) when is_binary(X) ->
   case re:run(X, Regexp, [{capture, none}, unicode]) of
     match ->
       true;
     nomatch ->
       false
   end;
-is_re_bin(_X, _Regexp) ->
+is_re_b(_X, _Regexp) ->
   false.
 
+
+%%is_re_bin(X, Regexp) -> % deprecated
+%%  is_re_b(X, Regexp).
+
+%todo in hrl ?
+-define(HEX_DIG(N), ?IF(N < 10, $0 + N, ($a - 10) + N)).
+-define(BYTE_L(N), (N band 16#f)).
+-define(BYTE_H(N), (N bsr 4)).
+
+
+s2s_hex_rev([A1, A2, A3, A4 | Tail], AccRev) ->
+  A1H = ?BYTE_H(A1),
+  A1L = ?BYTE_L(A1),
+  A2H = ?BYTE_H(A2),
+  A2L = ?BYTE_L(A2),
+  A3H = ?BYTE_H(A3),
+  A3L = ?BYTE_L(A3),
+  A4H = ?BYTE_H(A4),
+  A4L = ?BYTE_L(A4),
+  s2s_hex_rev(Tail, [
+    ?HEX_DIG(A4L),
+    ?HEX_DIG(A4H),
+    ?HEX_DIG(A3L),
+    ?HEX_DIG(A3H),
+    ?HEX_DIG(A2L),
+    ?HEX_DIG(A2H),
+    ?HEX_DIG(A1L),
+    ?HEX_DIG(A1H)
+    | AccRev
+  ]);
+s2s_hex_rev([A1 | Tail], AccRev) ->
+  A1H = ?BYTE_H(A1),
+  A1L = ?BYTE_L(A1),
+  s2s_hex_rev(Tail, [
+    ?HEX_DIG(A1L),
+    ?HEX_DIG(A1H)
+    | AccRev
+  ]);
+s2s_hex_rev("", AccRev) ->
+  AccRev.
+
+s2s_hex(Str) ->
+  s2s_hex(Str, "").
+
+s2s_hex(Str, AccRev) ->
+  ?l_rev(s2s_hex_rev(Str, AccRev)).
+
+b2b_hex(Bin) ->
+  ?s2b(?l_rev(
+    s2s_hex_rev(?b2s(Bin), "")
+  )).
 
