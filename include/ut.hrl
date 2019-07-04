@@ -8,9 +8,9 @@
 % p - proplist
 % b - binary
 % a - atom
-% t - tuple
+% t - tuple AND ?t=true
 % r - record
-% f - float
+% f - float AND ?f=false
 % m - map
 % bool - boolean
 % num - number
@@ -36,6 +36,9 @@
 
 -define(u, undefined).
 -define(n, null).
+-define(t, true).
+-define(f, false).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % shortcuts for ?is_...
@@ -60,6 +63,9 @@
 -define(is_port(X), is_port(X)).
 -define(is_bits(X), is_bitstring(X)).
 
+-define(is_bool_t(X), (X =:= true)).
+-define(is_bool_f(X), (X =:= false)).
+
 -define(is_i(X, From, To), (
     ?is_i(X) andalso ((X) =< To) andalso ((X) >= From)
 )).
@@ -77,9 +83,13 @@
 )).
 -define(is_i_non_pos(X), ?is_i_max(X, 0)).
 -define(is_i_non_neg(X), ?is_i_min(X, 0)).
+
 -define(is_byte(X), ?is_i(X, 0, 255)).
+-define(is_i_ascii(X), ?is_i(X, 0, 127)).
 
 -define(is_i_digit(X), ?is_i(X, $0, $9)).
+-define(is_i_eng_letter_small(X), ?is_i(X, $a, $z)).
+-define(is_i_eng_letter_big(X), ?is_i(X, $A, $Z)).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,7 +140,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -define(catch_safe(Expr, CatchExpr), (try Expr catch _:_ -> CatchExpr end)).
--define(catch_safe_fun3(Expr, CatchFun3, ExprArg3), (try Expr catch E:R -> CatchFun3(E, R, ExprArg3) end)).
+-define(catch_safe_fun3(Expr, CatchFun3, ExprArg3), (try Expr catch E:R -> (CatchFun3)(E, R, ExprArg3) end)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -153,8 +163,8 @@
 %%-define(l2i(X), list_to_integer(X)).  % deprecated: better use string macro
 %%-define(l2i(X, Base), list_to_integer(X, Base)).  % deprecated: better use string macro
 
--define(s2i_safe(X, Err), ?catch_safe(?s2i(X), Err)).
--define(s2i_safe(X, Base, Err), ?catch_safe(?s2i(X, Base), Err)).
+-define(s2i_safe(X, ErrExpr), ?catch_safe(?s2i(X), ErrExpr)).
+-define(s2i_safe(X, Base, ErrExpr), ?catch_safe(?s2i(X, Base), ErrExpr)).
 -define(s2i_safe_err(X), ?s2i_safe(X, error)).
 -define(s2i_safe_err(X, Base), ?s2i_safe(X, Base, error)).
 
@@ -163,8 +173,8 @@
 -define(i2b(X, Base), integer_to_binary(X, Base)).
 -define(b2i(X, Base), binary_to_integer(X, Base)).
 
--define(b2i_safe(X, Err), ?catch_safe(?b2i(X), Err)).
--define(b2i_safe(X, Base, Err), ?catch_safe(?b2i(X, Base), Err)).
+-define(b2i_safe(X, ErrExpr), ?catch_safe(?b2i(X), ErrExpr)).
+-define(b2i_safe(X, Base, ErrExpr), ?catch_safe(?b2i(X, Base), ErrExpr)).
 -define(b2i_safe_err(X), ?b2i_safe(X, error)).
 -define(b2i_safe_err(X, Base), ?b2i_safe(X, Base, error)).
 

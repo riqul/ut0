@@ -18,6 +18,9 @@
 %%  is_s_unicode/1,
   
   is_s_digits/1,
+  is_s_digits/2,
+  is_b_digits/1,
+  is_b_digits/2,
   
   b/1,
   b/2,
@@ -58,7 +61,7 @@
 pget(Key, List) ->
   case lists:keyfind(Key, 1, List) of
     {_, Val} -> Val;
-    false -> ?u
+    ?f -> ?u
 %%    ;_ -> undefined % found tuple with size =/= 2
   end.
 
@@ -66,7 +69,7 @@ pget(Key, List) ->
 pget(Key, List, Default) ->
   case lists:keyfind(Key, 1, List) of
     {_, Val} -> Val;
-    false -> Default
+    ?f -> Default
 %%    ;_ -> Default % found tuple with size =/= 2
   end.
 
@@ -99,12 +102,12 @@ mput(Key, Val, Map) ->
 is_s([X | Tail]) ->
   ?IF(?is_byte(X),
     is_s(Tail),
-    false
+    ?f
   );
 is_s("") ->
-  true;
+  ?t;
 is_s(_) ->
-  false.
+  ?f.
 
 
 %%is_s_byte(Arg) -> %todo: deprecated
@@ -115,26 +118,48 @@ is_s(_) ->
 is_su([X | Tail]) ->
   ?IF(?is_i_non_neg(X),
     is_su(Tail),
-    false
+    ?f
   );
 is_su("") ->
-  true;
+  ?t;
 is_su(_) ->
-  false.
+  ?f.
 
 %%is_s_unicode(Arg) -> %todo: deprecated
 %%  is_su(Arg).
 
-
 is_s_digits([X | Tail]) ->
   ?IF(?is_i_digit(X),
-    is_s_digits(Tail),
-    false
+    is_s_digits(Tail, ?t),
+    ?f
   );
-is_s_digits("") ->
-  true;
 is_s_digits(_) ->
-  false.
+  ?f.
+
+%%is_s_digits(List, IsEmptyNoError) when ?is_bool(IsEmptyNoError) ->
+%%  is_s_digits__no_verify_(List, IsEmptyNoError).
+
+is_s_digits([X | Tail], _IsEmptyNoError) ->
+  ?IF(?is_i_digit(X),
+    is_s_digits(Tail, ?t),
+    ?f
+  );
+is_s_digits("", IsEmptyNoError) ->
+  IsEmptyNoError =:= ?t;
+is_s_digits(_, _IsEmptyNoError) ->
+  ?f.
+
+
+is_b_digits(X) when ?is_b(X) ->
+  is_s_digits(?b2s(X));
+is_b_digits(_) ->
+  ?f.
+
+is_b_digits(X, IsEmptyNoError) when ?is_b(X) ->
+  is_s_digits(?b2s(X), IsEmptyNoError);
+is_b_digits(_, _) ->
+  ?f.
+
 
 %% convert %%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -470,18 +495,18 @@ l_stopmap_rev([], Acc, _StopMapFun, FunAcc) ->
 jsx_is_obj(X) ->
   if
     ?is_m(X) ->
-      true;
+      ?t;
     ?is_l(X) ->
       case X of
         [{_, _} | _] ->
-          true;
+          ?t;
         [{}] ->
-          true;
+          ?t;
         _ ->
-          false
+          ?f
       end;
-    true ->
-      false
+    ?t ->
+      ?f
   end.
 
 jsx_obj2p([{}]) ->
@@ -498,20 +523,20 @@ jsx_p2obj(Other) ->
 is_re(X, Regexp) ->
   case re:run(X, Regexp, [{capture, none}, unicode]) of
     match ->
-      true;
+      ?t;
     nomatch ->
-      false
+      ?f
   end.
 
 is_re_b(X, Regexp) when is_binary(X) ->
   case re:run(X, Regexp, [{capture, none}, unicode]) of
     match ->
-      true;
+      ?t;
     nomatch ->
-      false
+      ?f
   end;
 is_re_b(_X, _Regexp) ->
-  false.
+  ?f.
 
 
 %%is_re_bin(X, Regexp) -> % deprecated
