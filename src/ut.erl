@@ -1,6 +1,9 @@
 -module(ut).
 -include("ut.hrl").
 
+%%%% ut.erl BEGIN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ut {vsn, "0.20*"} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% API
 -export([
   pget/2,
@@ -32,6 +35,7 @@
   l_skip_errv/3,
   
   l_push_rep/3,
+  l_push_no_empty/2,
   
   l_key_val2p_rev/3,
   l_key_val2p/3,
@@ -51,7 +55,29 @@
   s2s_hex_rev/2,
   s2s_hex/1,
   s2s_hex/2,
-  b2b_hex/1
+  b2b_hex/1,
+  
+  spawn_fun/2,
+  spawn_link_fun/2,
+  spawn_monitor_fun/2,
+  spawn_opt_fun/3,
+  
+  unixtime/0,
+  i2zero2_s/2,
+  
+  date_time2s/2,
+  date2s/2,
+  date_time2date_s/2,
+  date_time2b/1,
+  date2b/1,
+  
+  f_precision_rev/2,
+  f_verify/5,
+  f_verify00/3,
+  
+  if_i2f/1,
+  
+  t_elem_compare/3
 ]).
 
 
@@ -161,7 +187,13 @@ is_b_digits(_, _) ->
   ?f.
 
 
-%% convert %%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if_i2f(X) ->
+  ?IF_i2f(X).
+
+
+%% convert & verify %%%%%%%%%%%%%%%%
 
 b(Val) when ?is_b(Val) ->
   Val;
@@ -174,12 +206,95 @@ b(Val, AdditionalErrorArgs) ->
   ?err_badarg([Val | AdditionalErrorArgs]).
 
 
-%% convert %%%%%%%%%%%%%%%%%%%%%%%%%
 
 ok2({ok, Res}) ->
   Res.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+t_elem_compare(N, T1, T2) ->
+  element(N, T1) =< element(N, T2).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+unixtime() ->
+  erlang:system_time(second). %erlang 18 and high
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i2zero2_s(Number, AccStr) when ?is_i(Number) ->
+  if
+    (Number >= 0) ->
+      if
+        Number < 10 ->
+          [$0, $0 + Number | AccStr];
+        Number < 100 ->
+          [$0 + (Number div 10), $0 + (Number rem 10) | AccStr];
+        true ->
+          ?i2s(Number) ++ AccStr
+      end;
+    true ->
+      ?i2s(Number) ++ AccStr
+  end.
+
+
+
+%% date_time %%%%%%%%%%%%%%%%%%%%%%%
+
+
+% return "Year-MM-DD hh:mm:ss" ++ AccStr
+date_time2s({{Year, Month, Day}, {Hour, Minute, Second}}, AccStr) ->
+  Ss = [$: | i2zero2_s(Second, AccStr)],
+  Sm = [$: | i2zero2_s(Minute, Ss)],
+  Sh = [$\s | i2zero2_s(Hour, Sm)],
+  SD = [$- | i2zero2_s(Day, Sh)],
+  SM = [$- | i2zero2_s(Month, SD)],
+  ?i2s(Year) ++ SM.
+
+% return "YYYY-MM-DD" ++ AccStr
+date2s({Year, Month, Day}, AccStr) ->
+  SD = [$- | i2zero2_s(Day, AccStr)],
+  SM = [$- | i2zero2_s(Month, SD)],
+  ?i2s(Year) ++ SM.
+
+% return "YYYY-MM-DD" ++ AccStr
+date_time2date_s({{Year, Month, Day}, {_Hour, _Minute, _Second}}, AccStr) ->
+  SD = [$- | i2zero2_s(Day, AccStr)],
+  SM = [$- | i2zero2_s(Month, SD)],
+  ?i2s(Year) ++ SM.
+
+
+date_time2b(DateTime) ->
+  ?s2b(date_time2s(DateTime, "")).
+
+date2b(DateTime) ->
+  ?s2b(date2s(DateTime, "")).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+f_precision_rev(F, PrecisionRev) ->
+  round(F * PrecisionRev) / PrecisionRev.
+
+f_verify(F, Min, Max, PrecisionRev, Delta) ->
+  F2 = f_precision_rev(F, PrecisionRev),
+  if
+    abs(F - F2) > Delta ->
+      {error, precision_delta};
+    (F2 < (Min - Delta)) orelse (F2 > (Max + Delta)) ->
+      {error, range};
+    true ->
+      {ok, F2}
+  end.
+
+f_verify00(X, Min, Max) ->
+  f_verify(X, Min, Max, 100.0, 0.0001).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -397,7 +512,7 @@ l_skip_errv(N, List, ErrVal) -> %todo: deprecated
 
 
 l_push_rep(N, E, List)
-  when ?is_i_non_neg(N), ?is_l(List) ->
+  when ?is_i_non_neg(N) -> % , ?is_l(List)
   case N of
     0 ->
       List;
@@ -419,7 +534,7 @@ l_push_rep(N, E, List)
       l_push_rep__no_verify_(N - 8, E, [E, E, E, E, E, E, E, E | List])
   end.
 
-% require ?is_i_non_neg(N), ?is_l(List) ->
+% require ?is_i_non_neg(N) ->
 l_push_rep__no_verify_(N, E, List) ->
   case N of
     0 ->
@@ -442,7 +557,13 @@ l_push_rep__no_verify_(N, E, List) ->
       l_push_rep__no_verify_(N - 8, E, [E, E, E, E, E, E, E, E | List])
   end.
 
-
+l_push_no_empty(E, List) ->
+  case List of
+    [] ->
+      List;
+    _ ->
+      [E | List]
+  end.
 
 l_key_val2p_rev([K | KTail], [V | VTail], Acc) ->
   l_key_val2p_rev(KTail, VTail, [{K, V} | Acc]);
@@ -547,7 +668,7 @@ is_re_b(_X, _Regexp) ->
 -define(BYTE_L(N), (N band 16#f)).
 -define(BYTE_H(N), (N bsr 4)).
 
-
+% require Arg1=[byte()], ?is_l(AccRev)
 s2s_hex_rev([A1, A2, A3, A4 | Tail], AccRev) ->
   A1H = ?BYTE_H(A1),
   A1L = ?BYTE_L(A1),
@@ -579,14 +700,40 @@ s2s_hex_rev([A1 | Tail], AccRev) ->
 s2s_hex_rev("", AccRev) ->
   AccRev.
 
+% require Str=[byte()]
 s2s_hex(Str) ->
-  s2s_hex(Str, "").
+  ?l_rev(s2s_hex_rev(Str, "")).
 
+% require Str=[byte()], ?is_l(AccRev)
 s2s_hex(Str, AccRev) ->
   ?l_rev(s2s_hex_rev(Str, AccRev)).
 
+% require ?is_b(Bin)
 b2b_hex(Bin) ->
   ?s2b(?l_rev(
     s2s_hex_rev(?b2s(Bin), "")
   )).
+
+
+spawn_fun(Fun, Args)
+%%  when ?is_l(Args), ?is_fun(Fun, length(Args))
+  ->
+  erlang:spawn(erlang, apply, [Fun, Args]).
+
+spawn_link_fun(Fun, Args)
+%%  when ?is_l(Args), ?is_fun(Fun, length(Args))
+  ->
+  erlang:spawn_link(erlang, apply, [Fun, Args]).
+
+spawn_monitor_fun(Fun, Args)
+%%  when ?is_l(Args), ?is_fun(Fun, length(Args))
+  ->
+  erlang:spawn_monitor(erlang, apply, [Fun, Args]).
+
+spawn_opt_fun(Fun, Args, Options)
+%%  when ?is_l(Args), ?is_fun(Fun, length(Args))
+  ->
+  erlang:spawn_opt({erlang, apply, [Fun, Args], Options}).
+
+% ut.erl END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -1,3 +1,5 @@
+%%%% ut.hrl BEGIN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ut {vsn, "0.20*"} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % u - undefined
 % n - null
@@ -15,7 +17,7 @@
 % bool - boolean
 % num - number
 % fun - function
-% iol - iolist
+% iol - iolist (but must be list())
 % pid - pid
 % ref - reference
 % port - port
@@ -88,8 +90,31 @@
 -define(is_i_ascii(X), ?is_i(X, 0, 127)).
 
 -define(is_i_digit(X), ?is_i(X, $0, $9)).
--define(is_i_eng_letter_small(X), ?is_i(X, $a, $z)).
--define(is_i_eng_letter_big(X), ?is_i(X, $A, $Z)).
+-define(is_i_letter_eng_small(X), ?is_i(X, $a, $z)).
+-define(is_i_letter_eng_big(X), ?is_i(X, $A, $Z)).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% shortcuts for ?must_*(...
+
+-define(must_u(X), (?t = ?is_u(X))).
+-define(must_n(X), (?t = ?is_n(X))).
+-define(must_l(X), (?t = ?is_l(X))).
+-define(must_b(X), (?t = ?is_b(X))).
+-define(must_i(X), (?t = ?is_i(X))).
+-define(must_a(X), (?t = ?is_a(X))).
+-define(must_t(X), (?t = ?is_t(X))).
+-define(must_r(X, Tag), (?t = ?is_r(X, Tag))).
+-define(must_r(X, Tag, N), (?t = ?is_r(X, Tag, N))).
+-define(must_f(X), (?t = ?is_f(X))).
+-define(must_num(X), (?t = ?is_num(X))).
+-define(must_m(X), (?t = ?is_m(X))).
+-define(must_bool(X), (?t = ?is_bool(X))).
+-define(must_fun(X), (?t = ?is_fun(X))).
+-define(must_fun(X, N), (?t = ?is_fun(X, N))).
+-define(must_pid(X), (?t = ?is_pid(X))).
+-define(must_ref(X), (?t = ?is_ref(X))).
+-define(must_port(X), (?t = ?is_port(X))).
+-define(must_bits(X), (?t = ?is_bits(X))).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,6 +141,12 @@
 -define(IF_bool(X, Then, Else),
   ?IF(?is_bool(X), Then, Else)
 ).
+-define(IF_bool_t(X, Then, Else),
+  (case (X) of true -> (Then); _ -> (Else) end)
+).
+-define(IF_bool_f(X, Then, Else),
+  (case (X) of false -> (Then); _ -> (Else) end)
+).
 -define(IF_i(X, Then, Else),
   ?IF(?is_i(X), Then, Else)
 ).
@@ -137,10 +168,15 @@
 %%  ?IF(X =/= null, X, ElseExpr)
 %%).
 
+
+-define(IF_i2f(X),
+  ?IF_i(X, X + 0.0, X)
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -define(catch_safe(Expr, CatchExpr), (try Expr catch _:_ -> CatchExpr end)).
--define(catch_safe_fun3(Expr, CatchFun3, ExprArg3), (try Expr catch E:R -> (CatchFun3)(E, R, ExprArg3) end)).
+-define(catch_safe_fun3(Expr, CatchFun3, BindingE, BindingR, ExprArg3), (try Expr catch BindingE:BindingR -> (CatchFun3)(BindingE, BindingR, ExprArg3) end)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -275,5 +311,13 @@
 -define(err_badarg(Args), erlang:error(badarg, Args)).
 
 
+-define(pget_v1(Key, List, DefaultExpr, BindingVar1), case lists:keyfind(Key, 1, List) of {_, BindingVar1} -> BindingVar1; ?f -> DefaultExpr end).
+-define(pget_v1(Key, List, BindingVar1), case lists:keyfind(Key, 1, List) of {_, BindingVar1} -> BindingVar1; ?f -> ?u end).
+
+
 -define(p_sort(X), lists:ukeysort(1, X)).
 -define(p_merge_sort(X1, X2), lists:ukeymerge(1, X2, X1)). % reverse order because X2 must have maximum priority
+
+
+
+% ut.hrl END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

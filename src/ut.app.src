@@ -1,7 +1,7 @@
 {application, ut,
   [
     {description, "ut"},
-    {vsn, "0.201"},
+    {vsn, "0.202"},
     {id, "ut"},
     {modules, [ut]},
     {applications, []},
