@@ -72,11 +72,12 @@
   date_time2b/1,
   date2b/1,
   
-  f_dec_rev/2,
-  f_dec2/1,
-  f_verify_dec/3,
-  f_verify_dec/5,
-  f_verify_dec2/3,
+  f_round_rev/2,
+  f_round2/1,
+  f_verify/3,
+  f_verify/5,
+  f_verify2/1,
+  f_verify2/3,
   
   if_i2f/1,
   
@@ -279,16 +280,16 @@ date2b(DateTime) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-f_dec_rev(F, PrecisionRev) ->
+f_round_rev(F, PrecisionRev) ->
   round(F * PrecisionRev) / PrecisionRev.
 
-f_dec2(F) ->
-  f_dec_rev(F, 100.0).
+f_round2(F) ->
+  f_round_rev(F, 100.0).
 %%  round(F * 100.0) / 100.0.
 
 
-f_verify_dec(F, PrecisionRev, Delta) ->
-  F2 = f_dec_rev(F, PrecisionRev),
+f_verify(F, PrecisionRev, Delta) ->
+  F2 = f_round_rev(F, PrecisionRev),
   if
     abs(F - F2) > Delta ->
       {error, <<"delta">>};
@@ -296,8 +297,8 @@ f_verify_dec(F, PrecisionRev, Delta) ->
       {ok, F2}
   end.
 
-f_verify_dec(F, Min, Max, PrecisionRev, Delta) ->
-  F2 = f_dec_rev(F, PrecisionRev),
+f_verify(F, Min, Max, PrecisionRev, Delta) ->
+  F2 = f_round_rev(F, PrecisionRev),
   if
     abs(F - F2) > Delta ->
       {error, <<"delta">>};
@@ -307,8 +308,12 @@ f_verify_dec(F, Min, Max, PrecisionRev, Delta) ->
       {ok, F2}
   end.
 
-f_verify_dec2(X, Min, Max) ->
-  f_verify_dec(X, Min, Max, 100.0, 0.0001).
+f_verify2(X) ->
+  f_verify(X, 100.0, 0.0001).
+
+f_verify2(X, Min, Max) ->
+  f_verify(X, Min, Max, 100.0, 0.0001).
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
