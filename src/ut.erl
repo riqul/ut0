@@ -80,10 +80,10 @@
   f_round4/1,
   f_round5/1,
   f_round6/1,
-
+  
   f_down_rev/3,
   f_down2/1,
-
+  
   f_up_rev/3,
   f_up2/1,
   
@@ -257,7 +257,6 @@ i2zero2_s(Number, AccStr) when ?is_i(Number) ->
   end.
 
 
-
 %% date_time %%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -357,23 +356,33 @@ f_up2(F) ->
 
 
 f_verify(F, PrecisionRev, Delta) ->
-  F2 = f_round_rev(F, PrecisionRev),
   if
-    abs(F - F2) > Delta ->
-      {error, <<"delta">>};
-    true ->
-      {ok, F2}
+    ?is_f(F) ->
+      F2 = f_round_rev(F, PrecisionRev),
+      if
+        abs(F - F2) > Delta ->
+          {error, <<"delta">>};
+        true ->
+          {ok, F2}
+      end;
+    ?t ->
+      {error, <<"type">>}
   end.
 
 f_verify(F, Min, Max, PrecisionRev, Delta) ->
-  F2 = f_round_rev(F, PrecisionRev),
   if
-    abs(F - F2) > Delta ->
-      {error, <<"delta">>};
-    (F2 < (Min - Delta)) orelse (F2 > (Max + Delta)) ->
-      {error, <<"range">>};
-    true ->
-      {ok, F2}
+    ?is_f(F) ->
+      F2 = f_round_rev(F, PrecisionRev),
+      if
+        abs(F - F2) > Delta ->
+          {error, <<"delta">>};
+        (F2 < (Min - Delta)) orelse (F2 > (Max + Delta)) ->
+          {error, <<"range">>};
+        true ->
+          {ok, F2}
+      end;
+    ?t ->
+      {error, <<"type">>}
   end.
 
 f_verify2(X) ->
@@ -381,7 +390,6 @@ f_verify2(X) ->
 
 f_verify2(X, Min, Max) ->
   f_verify(X, Min, Max, ?F_PRECISION2_REV, ?F_DELTA2).
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
