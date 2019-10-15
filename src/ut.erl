@@ -73,7 +73,20 @@
   date2b/1,
   
   f_round_rev/2,
+  f_round0/1,
+  f_round1/1,
   f_round2/1,
+  f_round3/1,
+  f_round4/1,
+  f_round5/1,
+  f_round6/1,
+
+  f_down_rev/3,
+  f_down2/1,
+
+  f_up_rev/3,
+  f_up2/1,
+  
   f_verify/3,
   f_verify/5,
   f_verify2/1,
@@ -280,12 +293,67 @@ date2b(DateTime) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+
+-define(F_PRECISION0_REV, 1.0).
+-define(F_PRECISION1_REV, 10.0).
+-define(F_PRECISION2_REV, 100.0).
+-define(F_PRECISION3_REV, 1000.0).
+-define(F_PRECISION4_REV, 10000.0).
+-define(F_PRECISION5_REV, 100000.0).
+-define(F_PRECISION6_REV, 1000000.0).
+
+
+-define(F_DELTA_MULTI, 0.01).
+
+% = ?F_DELTA_MULTI / ?F_PRECISION{n}_REV
+-define(F_DELTA0, 0.01).
+-define(F_DELTA1, 0.001).
+-define(F_DELTA2, 0.0001).
+-define(F_DELTA3, 0.00001).
+-define(F_DELTA4, 0.000001).
+-define(F_DELTA5, 0.0000001).
+-define(F_DELTA6, 0.00000001).
+
+
+
 f_round_rev(F, PrecisionRev) ->
   round(F * PrecisionRev) / PrecisionRev.
 
+
+f_round0(F) ->
+  round(F).
+
+f_round1(F) ->
+  round(F * ?F_PRECISION1_REV) / ?F_PRECISION1_REV.
+
 f_round2(F) ->
-  f_round_rev(F, 100.0).
-%%  round(F * 100.0) / 100.0.
+  round(F * ?F_PRECISION2_REV) / ?F_PRECISION2_REV.
+
+f_round3(F) ->
+  round(F * ?F_PRECISION3_REV) / ?F_PRECISION3_REV.
+
+f_round4(F) ->
+  round(F * ?F_PRECISION4_REV) / ?F_PRECISION4_REV.
+
+f_round5(F) ->
+  round(F * ?F_PRECISION5_REV) / ?F_PRECISION5_REV.
+
+f_round6(F) ->
+  round(F * ?F_PRECISION6_REV) / ?F_PRECISION6_REV.
+
+
+f_down_rev(F, PrecisionRev, DeltaMulti) ->
+  round(F * PrecisionRev - 0.5 + DeltaMulti) / PrecisionRev.
+
+f_down2(F) ->
+  round(F * ?F_PRECISION2_REV - 0.5 + ?F_DELTA_MULTI) / ?F_PRECISION2_REV.
+
+
+f_up_rev(F, PrecisionRev, DeltaMulti) ->
+  round(F * PrecisionRev + 0.5 - DeltaMulti) / PrecisionRev.
+
+f_up2(F) ->
+  round(F * ?F_PRECISION2_REV + 0.5 - ?F_DELTA_MULTI) / ?F_PRECISION2_REV.
 
 
 f_verify(F, PrecisionRev, Delta) ->
@@ -309,10 +377,10 @@ f_verify(F, Min, Max, PrecisionRev, Delta) ->
   end.
 
 f_verify2(X) ->
-  f_verify(X, 100.0, 0.0001).
+  f_verify(X, ?F_PRECISION2_REV, ?F_DELTA2).
 
 f_verify2(X, Min, Max) ->
-  f_verify(X, Min, Max, 100.0, 0.0001).
+  f_verify(X, Min, Max, ?F_PRECISION2_REV, ?F_DELTA2).
 
 
 
